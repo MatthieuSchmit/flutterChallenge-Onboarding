@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_design_challenge/constants.dart';
 import 'package:flutter_design_challenge/screens/login/Login.dart';
@@ -45,21 +47,21 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   Animation<Offset> _slideAnimationLightCard;
   Animation<Offset> _slideAnimationDarkCard;
 
+  AnimationController _pageIndicatorAnimationController;
+  Animation<double> _pageIndicatorAnimation;
+
   int _page = 0;
 
   @override
   void initState() {
     super.initState();
-    _cardAnimationController = AnimationController(
-      vsync: this,
-      duration: kCardAnimDuration
-    );
-    _setCardSlideOut();
+    _resetAll();
   }
 
   @override
   void dispose() {
     _cardAnimationController.dispose();
+    _pageIndicatorAnimationController.dispose();
     super.dispose();
   }
 
@@ -94,11 +96,18 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             Positioned(
               left: (MediaQuery.of(context).size.width - 74) / 2,
               bottom: 30,
-              child: PageIndicator(
-                currentPage: _page,
-                nextButton: NextButton(
+              child: AnimatedBuilder(
+                animation: _pageIndicatorAnimation,
+                child: NextButton(
                   onClick: () async => await _setNextPage(context),
                 ),
+                builder: (_, Widget child) {
+                  return PageIndicator(
+                    currentPage: _page,
+                    nextButton: child,
+                    angle: _pageIndicatorAnimation.value,
+                  );
+                },
               ),
             ),
           ],
@@ -107,37 +116,69 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     );
   }
 
+  /// MARK - Navigator
   _setNextPage(BuildContext context) async {
     switch (_page) {
       case 0:
-        await _cardAnimationController.forward();
-        setState(() {_page = 1;});
-        _setCardSlideIn();
-        await _cardAnimationController.forward();
-        _setCardSlideOut();
+        print(_pageIndicatorAnimation.status);
+        if(_pageIndicatorAnimation.status == AnimationStatus.dismissed) {
+          _pageIndicatorAnimationController.forward();
+          await _cardAnimationController.forward();
+          setState(() {_page = 1;});
+          _setCardSlideIn();
+          await _cardAnimationController.forward();
+          _setCardSlideOut();
+          _setPageIndicatorAnimation(isClockwiseAnim: false);
+        }
         break;
       case 1:
-        await _cardAnimationController.forward();
-        setState(() {_page = 2;});
-        _setCardSlideIn();
-        await _cardAnimationController.forward();
-        _setCardSlideOut();
+        if(_pageIndicatorAnimation.status == AnimationStatus.dismissed) {
+          _pageIndicatorAnimationController.forward();
+          await _cardAnimationController.forward();
+          setState(() {_page = 2;});
+          _setCardSlideIn();
+          await _cardAnimationController.forward();
+          _setCardSlideOut();
+        }
         break;
       case 2:
-        _navigateToLogin();
+        if(_pageIndicatorAnimation.status == AnimationStatus.completed) {
+          _navigateToLogin();
+        }
         break;
     }
   }
-
   _navigateToLogin() {
     Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => Login())
     );
+    _resetAll();
+  }
+
+  _resetAll() {
     setState(() {
       _page = 0;
+
+      // Page indicator animation
+      if (_pageIndicatorAnimationController != null) _pageIndicatorAnimationController.dispose();
+      _pageIndicatorAnimationController = AnimationController(
+          vsync: this,
+          duration: kButtonAnimDuration
+      );
+      _setPageIndicatorAnimation();
+
+      // Cards animations
+      if (_cardAnimationController != null) _cardAnimationController.dispose();
+      _cardAnimationController = AnimationController(
+          vsync: this,
+          duration: kCardAnimDuration
+      );
+      _setCardSlideOut();
+
     });
   }
 
+  /// MARK - Get page
   Widget _getDarkContent() {
     switch (_page) {
       case 1:
@@ -175,6 +216,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
   }
 
+  /// MARK - Animations
   _setCardSlideOut() {
     setState(() {
       _slideAnimationLightCard = Tween<Offset>(
@@ -212,6 +254,22 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ));
       _cardAnimationController.reset();
     });
+  }
+  _setPageIndicatorAnimation({bool isClockwiseAnim = true}) {
+    double multiplicator = isClockwiseAnim ? 2 : -2;
+    setState(() {
+      _pageIndicatorAnimation = Tween(
+        begin: 0.0,
+        end: multiplicator * pi
+      ).animate(
+        CurvedAnimation(
+          parent: _pageIndicatorAnimationController,
+          curve: Curves.easeIn
+        )
+      );
+      _pageIndicatorAnimationController.reset();
+    });
+
   }
 
 }

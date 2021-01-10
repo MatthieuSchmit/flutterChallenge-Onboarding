@@ -14,10 +14,12 @@ class PageIndicator extends StatelessWidget {
 
   final int currentPage;
   final Widget nextButton;
+  final double angle;
 
   PageIndicator({
     @required this.currentPage,
-    @required this.nextButton
+    @required this.nextButton,
+    @required this.angle
   });
 
   double get indicatorGap => pi / 12;
@@ -30,19 +32,19 @@ class PageIndicator extends StatelessWidget {
         painter: _PageIndicatorUnit(
           color: (this.currentPage >= 0) ? kWhite : kWhite.withOpacity(0.25),
           indicatorLength: indicatorLength,
-          startAngle: (4 * indicatorLength) - (indicatorLength + indicatorGap)
+          startAngle: ((4 * indicatorLength) - (indicatorLength + indicatorGap)) + this.angle
         ),
         child: CustomPaint(
           painter: _PageIndicatorUnit(
               color: (this.currentPage >= 1) ? kWhite : kWhite.withOpacity(0.25),
               indicatorLength: indicatorLength,
-              startAngle: 4 * indicatorLength
+              startAngle: (4 * indicatorLength) + this.angle
           ),
           child: CustomPaint(
             painter: _PageIndicatorUnit(
                 color: (this.currentPage >= 2) ? kWhite : kWhite.withOpacity(0.25),
                 indicatorLength: indicatorLength,
-                startAngle: (4 * indicatorLength) + indicatorLength + indicatorGap
+                startAngle: ((4 * indicatorLength) + indicatorLength + indicatorGap) + this.angle
             ),
             child: this.nextButton,
           )
